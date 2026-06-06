@@ -128,22 +128,13 @@ export default function App() {
 
   const navigateTo = (newView) => { setView(newView); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
-  const handleUpgrade = async (tier) => {
-    try {
-      setIsUpgrading(tier);
-      setBanner(`Preparing secure connection node for ${tier} cluster deployment...`);
-      const response = await fetch('https://aura-backend-production-ad05.up.railway.app/api/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier, billing: billingPeriod, userId: user.id })
-      });
-      if (!response.ok) throw new Error("Server checkout handshake rejected.");
-      const { url } = await response.json();
-      window.location.href = url;
-    } catch (error) {
-      setIsUpgrading(null);
-      setBanner("❌ Connection timed out. Ensure your backend billing nodes are listening.");
-    }
+  const handleUpgrade = (tier) => {
+    const urls = {
+      Solo: 'https://auraos-platform.lemonsqueezy.com/checkout/buy/48747475-4c70-4782-8b3d-22da199ec8c7',
+      Scale: 'https://auraos-platform.lemonsqueezy.com/checkout/buy/2b4d096c-0393-4576-8a74-95c17c8dff45',
+      Sovereign: 'https://auraos-platform.lemonsqueezy.com/checkout/buy/a1c49df4-5205-4cce-90cb-bf0f245e9f7b',
+    };
+    if (urls[tier]) window.location.href = urls[tier];
   };
 
   const handleOpenBillingPortal = async () => {
