@@ -1,5 +1,6 @@
 ```react
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { supabase } from './supabase.js';
 import { 
   Brain, 
   Zap, 
@@ -58,6 +59,61 @@ const STORAGE_KEYS = {
 };
 
 export default function App() {
+const [user, setUser] = useState(null);
+const [authLoading, setAuthLoading] = useState(true);
+const [email, setEmail] = useState('');
+const [password, setPassword] = useState('');
+
+useEffect(() => {
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    setUser(session?.user ?? null);
+    setAuthLoading(false);
+  });
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    setUser(session?.user ?? null);
+  });
+  return () => subscription.unsubscribe();
+}, []);
+
+const handleLogin = async (e) => {
+  e.preventDefault();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) setBanner('❌ ' + error.message);
+};
+
+const handleSignup = async (e) => {
+  e.preventDefault();
+  const { error } = await supabase.auth.signUp({ email, password });
+  if (error) setBanner('❌ ' + error.message);
+  else setBanner('✅ Check your email to confirm your account!');
+};
+
+const handleLogout = async () => {
+  await supabase.auth.signOut();
+  setUser(null);
+};
+
+if (authLoading) return <div className="min-h-screen bg-[#06060a] flex items-center justify-center text-white">Loading...</div>;
+
+if (!user) return (
+  <div className="min-h-screen bg-[#06060a] flex items-center justify-center">
+    <div className="bg-[#0f0f16] border border-white/10 rounded-3xl p-8 w-full max-w-sm shadow-2xl">
+      <div className="flex items-center gap-2 mb-6">
+        <div className="w-9 h-9 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+          <span className="text-white font-bold text-sm">A</span>
+        </div>
+        <span className="text-white font-bold text-lg">AuraOS</span>
+      </div>
+      <h2 className="text-xl font-black text-white mb-6">Sign in to your account</h2>
+      <div className="space-y-3">
+        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500 text-sm" />
+        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500 text-sm" />
+        <button onClick={handleLogin} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-sm font-bold text-white">Sign In</button>
+        <button onClick={handleSignup} className="w-full py-3 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl text-sm font-bold text-white">Create Account</button>
+      </div>
+    </div>
+  </div>
+);
   // ----------------------------------------------------
   // INITIAL STATE HYDRATION (Safe Local Storage Hydration)
   // ----------------------------------------------------
@@ -250,7 +306,7 @@ export default function App() {
         body: JSON.stringify({ 
           tier, 
           billing: billingPeriod,
-          userId: "current_authenticated_user_id" // Attached to session context in backend
+          userId: user.id
         })
       });
 
